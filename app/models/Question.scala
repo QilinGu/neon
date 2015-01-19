@@ -8,4 +8,6 @@ object Question {
     Question(2, "What should I eat today?", "I'm hungry."))
 
   def all = questions.toList
+
+  def find(id: Long) = questions.find(_.id == id)
 }

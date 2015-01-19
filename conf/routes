@@ -9,3 +9,4 @@ GET     /                           controllers.Application.index
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 GET     /questions                  controllers.Questions.index
+GET     /questions/:id              controllers.Questions.show(id: Long)

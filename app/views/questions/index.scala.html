@@ -1,9 +1,11 @@
 @(questions: List[Question])
 
 @main("Questions") {
-<ul class="questions">
-  @for(question <- questions) {
-    <li>@question.title</li>
-  }
-</ul>
+  <h1>Questions</h1>
+
+  <ul class="questions">
+    @for(question <- questions) {
+      <li>@question.title</li>
+    }
+  </ul>
 }
