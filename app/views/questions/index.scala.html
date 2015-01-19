@@ -5,7 +5,7 @@
 
   <ul class="questions">
     @for(question <- questions) {
-      <li>@question.title</li>
+      <li><a href="@routes.Questions.show(question.id)">@question.title</a></li>
     }
   </ul>
 }
