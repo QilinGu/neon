@@ -1,14 +1,27 @@
 @(title: String)(content: Html)
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@title</title>
     <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
-    <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
+    <link rel="stylesheet" href="@routes.Assets.at("stylesheets/vendor/normalize.css")">
+    <link rel="stylesheet" href="@routes.Assets.at("stylesheets/vendor/foundation.min.css")">
     <script src="@routes.Assets.at("javascripts/hello.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/vendor/modernizr.js")" type="text/javascript"></script>
   </head>
   <body>
-    @content
+    <div class="row">
+      <div class="small-12 columns">
+        @content
+      </div>
+    </div>
+
+    <script src="@routes.Assets.at("javascripts/vendor/jquery.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/vendor/foundation.min.js")" type="text/javascript"></script>
+    <script>
+      $(document).foundation();
+    </script>
   </body>
 </html>
