@@ -10,3 +10,6 @@ GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 GET     /questions                  controllers.Questions.index
 GET     /questions/:id              controllers.Questions.show(id: Long)
+
+GET     /sign_in                    controllers.Sessions.start
+GET     /auth/github/callback       controllers.Sessions.authenticate(code: String)
