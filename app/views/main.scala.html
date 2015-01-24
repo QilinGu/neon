@@ -1,4 +1,4 @@
-@(title: String)(content: Html)
+@(title: String, user: Option[User])(content: Html)
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -16,7 +16,15 @@
       <nav class="top-bar" data-topbar role="navigation">
         <section class="top-bar-section">
           <ul class="right">
-            <li><a href="@routes.Sessions.start">Sign In</a></li>
+            @user match {
+              case Some(user) => {
+                <li><a>Signed in as @user.login</a></li>
+                <li><a href="@routes.Sessions.close">Sign out</a></li>
+              }
+              case None => {
+                <li><a href="@routes.Sessions.start">Sign In</a></li>
+              }
+            }
           </ul>
         </section>
       </nav>

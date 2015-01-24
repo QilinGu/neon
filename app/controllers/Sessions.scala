@@ -7,6 +7,9 @@ import play.api.mvc.{Action, Controller}
 import play.api.Play.current
 import play.api.libs.ws.WS
 import play.api.libs.json._
+import play.api.libs.functional.syntax._
+
+import models.User
 
 object Sessions extends Controller {
   val oauthClientId =
@@ -30,6 +33,11 @@ object Sessions extends Controller {
     Redirect(oauthRedirectUrl)
   }
 
+  def close = Action {
+    implicit request =>
+      Redirect(routes.Questions.index).withSession(request.session - "user.id" - "user.login")
+  }
+
   def authenticate(code: String) = Action {
     request => {
       val tokenResponseFuture = WS.url(oauthAccessTokenUrl)
@@ -43,24 +51,25 @@ object Sessions extends Controller {
       val tokenJson = Json.parse(tokenResponse.body)
 
       (tokenJson \ "access_token") match {
-        case _: JsUndefined => InternalServerError("Sorry, something went wrong.")
         case token: JsString => {
-
           val userResponseFuture = WS.url(userDetailsUrl)
           .withHeaders("Authorization" -> ("token " + token.as[String])).get
 
           val userResponse = Await.result(userResponseFuture, 60 seconds)
-          val userJson = Json.parse(userResponse.body)
+          val user = Json.parse(userResponse.body).as[User]
 
-          (userJson \ "id") match {
-            case _: JsUndefined => InternalServerError("Sorry, something went wrong.")
-            case id: JsNumber => {
-              Redirect(routes.Questions.index).withSession(
-                request.session + ("user.id" -> id.toString))
-            }
-          }
+          Redirect(routes.Questions.index).withSession(
+            request.session
+              + ("user.id" -> user.id.toString)
+              + ("user.login" -> user.login))
         }
+        case _ => InternalServerError("Sorry, something went wrong.")
       }
     }
   }
+
+  implicit val userReads: Reads[User] = (
+    (JsPath \ "id").read[Long] and
+    (JsPath \ "login").read[String]
+  )(User.apply _)
 }
