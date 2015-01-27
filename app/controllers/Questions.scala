@@ -20,7 +20,7 @@ object Questions extends Controller {
 
   implicit def user(implicit request: RequestHeader): Option[User] = {
     request.session.get("user.id") match {
-      case Some(id) => Some(User(id.toLong, request.session("user.login")))
+      case Some(id) => User.find(id.toLong)
       case None => None
     }
   }
