@@ -1,0 +1,18 @@
+@(user: Option[User])
+<div class="contain-to-grid full-top-bar">
+  <nav class="top-bar" data-topbar role="navigation">
+    <section class="top-bar-section">
+      <ul class="right">
+        @user match {
+          case Some(user) => {
+            <li><a>Signed in as @user.username</a></li>
+            <li><a href="@routes.Sessions.close">Sign out</a></li>
+          }
+          case None => {
+            <li><a href="@routes.Sessions.start">Sign In</a></li>
+          }
+        }
+      </ul>
+    </section>
+  </nav>
+</div>

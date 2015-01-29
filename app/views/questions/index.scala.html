@@ -1,6 +1,6 @@
-@(questions: List[Question])
+@(questions: List[Question])(implicit user: Option[User])
 
-@main("Questions") {
+@main("Questions", user) {
   <h1>Questions</h1>
 
   <ul class="questions">

@@ -1,6 +1,6 @@
-@(question: Question)
+@(question: Question)(implicit user: Option[User])
 
-@main(question.title) {
+@main(question.title, user) {
   <h1>@question.title</h1>
 
   <p>@question.body</p>
