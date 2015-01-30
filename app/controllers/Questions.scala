@@ -31,7 +31,7 @@ object Questions extends Controller {
   }
 
   def saveAndRedirect(params: QuestionParams) =
-    Question.create(params) match {
+    Question.create(params.title, params.body) match {
       case Some(question) => Redirect(routes.Questions.show(question.id))
       case None => InternalServerError(views.html.errors.serverError())
     }

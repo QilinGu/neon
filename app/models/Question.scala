@@ -1,53 +1,35 @@
 package models
 
-import anorm.{ SQL, SqlQuery }
+import anorm.{SQL, SqlQuery}
 import play.api.Play.current
 import play.api.db.DB
-import controllers.QuestionParams
 
 case class Question(id: Long, title: String, body: String)
 
 object Question {
-  val allQuery = SQL("SELECT * FROM questions");
-
   def all = DB.withConnection { implicit connection =>
-    allQuery().map {
-      row =>
-      Question(
-        row[Long]("id"),
-        row[String]("title"),
-        row[String]("body")
-      )
-    }.toList
+    findAllQuery().map { row => mapQuestion(row) }.toList
   }
 
-  val findQuery = SQL("SELECT * FROM questions WHERE id = {id}")
-
-  def find(id: Long) = DB.withConnection {
-    implicit connection =>
-      {
-        findQuery.on("id" -> id).map {
-          row =>
-            Question(
-              row[Long]("id"),
-              row[String]("title"),
-              row[String]("body")
-            )
-        }.singleOpt
-      }
+  def find(id: Long) = DB.withConnection { implicit connection =>
+    findOneQuery.on("id" -> id).map { row => mapQuestion(row) }.singleOpt
   }
 
+  val findAllQuery = SQL("SELECT * FROM questions");
+  val findOneQuery = SQL("SELECT * FROM questions WHERE id = {id}")
   val createQuestionStatement =
-    SQL("INSERT INTO questions (title, body, created_at) VALUES ({title}, {body}, NOW()) RETURNING id")
+    SQL("INSERT INTO questions (title, body, created_at) " +
+      "VALUES ({title}, {body}, NOW()) RETURNING id")
 
-  def create(params: QuestionParams): Option[Question] = {
+  def create(title: String, body: String): Option[Question] = {
     DB.withConnection { implicit connection =>
       createQuestionStatement.on(
-        "title" -> params.title,
-        "body" -> params.body
-      ).map {
-          row => Question(row[Long]("id"), params.title, params.body)
-        }.singleOpt()
+        "title" -> title,
+        "body" -> body
+      ).map { row => Question(row[Long]("id"), title, body) }.singleOpt()
     }
   }
+
+  private def mapQuestion(row: anorm.Row): Question =
+    Question(row[Long]("id"), row[String]("title"), row[String]("body"))
 }
