@@ -5,8 +5,7 @@ import play.api.Play.current
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.libs.ws.WS
-import play.api.mvc.AnyContent
-import play.api.mvc.{Action, Controller, Request}
+import play.api.mvc._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -15,20 +14,16 @@ object Sessions extends Controller {
     Redirect(oauthRedirectUrl)
   }
 
-  def close = Action {
-    implicit request =>
-      Redirect(routes.Questions.index)
-        .withSession(request.session - "user.id" - "user.login")
+  def close = Action { implicit request =>
+    Redirect(routes.Questions.index)
+      .withSession(request.session - "user.id" - "user.login")
   }
 
-  def authenticate(code: String) = Action {
-    implicit request =>
-      {
-        getUserProfile(code) match {
-          case Some(profile) => saveUserAndRedirect(request, profile)
-          case None => InternalServerError("Sorry, something went wrong.")
-        }
-      }
+  def authenticate(code: String) = Action { implicit request =>
+    getUserProfile(code) match {
+      case Some(profile) => saveUserAndRedirect(request, profile)
+      case None => InternalServerError("Sorry, something went wrong.")
+    }
   }
 
   val oauthClientId = readConfig("oauth.github.client_id")

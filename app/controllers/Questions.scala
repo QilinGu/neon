@@ -2,26 +2,22 @@ package controllers
 
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.mvc.{ Action, Controller, RequestHeader }
+import play.api.mvc._
 import models.{ Question, User }
 import play.mvc.Http.Response
 
 case class QuestionParams(title: String, body: String)
 
 object Questions extends Controller {
-  def index = Action {
-    implicit request =>
-      Ok(views.html.questions.index(Question.all))
+  def index = Action { implicit request =>
+    Ok(views.html.questions.index(Question.all))
   }
 
-  def show(id: Long) = Action {
-    implicit request =>
-      {
-        Question.find(id) match {
-          case Some(question) => Ok(views.html.questions.show(question))
-          case None => NotFound
-        }
-      }
+  def show(id: Long) = Action { implicit request =>
+    Question.find(id) match {
+      case Some(question) => Ok(views.html.questions.show(question))
+      case None => NotFound
+    }
   }
 
   def newForm = Action { implicit request =>
