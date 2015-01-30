@@ -1,10 +1,10 @@
 package controllers
 
+import controllers.actions.AuthenticatedAction
+import models.{Question, User}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc._
-import models.{ Question, User }
-import play.mvc.Http.Response
 
 case class QuestionParams(title: String, body: String)
 
@@ -20,11 +20,11 @@ object Questions extends Controller {
     }
   }
 
-  def newForm = Action { implicit request =>
+  def newForm = AuthenticatedAction { implicit request =>
     Ok(views.html.questions.newForm(questionForm))
   }
 
-  def create = Action { implicit request =>
+  def create = AuthenticatedAction { implicit request =>
     questionForm.bindFromRequest.fold(
       formWithErrors => BadRequest(views.html.questions.newForm(formWithErrors)),
       params => saveAndRedirect(params))
