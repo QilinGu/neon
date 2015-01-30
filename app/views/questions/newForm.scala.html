@@ -1,0 +1,14 @@
+@(questionForm: Form[QuestionParams])(implicit user: Option[User])
+
+@main("Ask Question", user) {
+  <h1>Ask a Question</h1>
+
+  @helper.form(action = routes.Questions.create) {
+    @helper.inputText(questionForm("title"))
+    @helper.textarea(questionForm("body"))
+
+    <div class="new-question-submit">
+      <button type="submit">Ask Question</button>
+    </div>
+  }
+}
