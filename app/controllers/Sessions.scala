@@ -22,7 +22,7 @@ object Sessions extends Controller {
   def authenticate(code: String) = Action { implicit request =>
     getUserProfile(code) match {
       case Some(profile) => saveUserAndRedirect(request, profile)
-      case None => InternalServerError("Sorry, something went wrong.")
+      case None => InternalServerError(views.html.errors.serverError())
     }
   }
 
@@ -71,7 +71,7 @@ object Sessions extends Controller {
 
     user match {
       case Some(user) => Redirect(routes.Questions.index).withSession(request.session + ("user.id" -> user.id.toString))
-      case None => InternalServerError("Something went wrong.")
+      case None => InternalServerError(views.html.errors.serverError())
     }
   }
 

@@ -16,7 +16,7 @@ object Questions extends Controller {
   def show(id: Long) = Action { implicit request =>
     Question.find(id) match {
       case Some(question) => Ok(views.html.questions.show(question))
-      case None => NotFound
+      case None => NotFound(views.html.errors.notFound())
     }
   }
 
@@ -33,7 +33,7 @@ object Questions extends Controller {
   def saveAndRedirect(params: QuestionParams) =
     Question.create(params) match {
       case Some(question) => Redirect(routes.Questions.show(question.id))
-      case None => InternalServerError("Oops")
+      case None => InternalServerError(views.html.errors.serverError())
     }
 
   implicit def user(implicit request: RequestHeader): Option[User] = {
