@@ -1,6 +1,7 @@
 package controllers
 
 import controllers.actions.AuthenticatedAction
+import controllers.actions.AuthenticatedRequest
 import models.{Question, User}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -27,11 +28,12 @@ object Questions extends Controller {
   def create = AuthenticatedAction { implicit request =>
     questionForm.bindFromRequest.fold(
       formWithErrors => BadRequest(views.html.questions.newForm(formWithErrors)),
-      params => saveAndRedirect(params))
+      params => saveAndRedirect(params, request))
   }
 
-  def saveAndRedirect(params: QuestionParams) =
-    Question.create(params.title, params.body) match {
+  def saveAndRedirect(params: QuestionParams,
+    request: AuthenticatedRequest[AnyContent]) =
+    Question.create(params.title, params.body, request.userId) match {
       case Some(question) => Redirect(routes.Questions.show(question.id))
       case None => InternalServerError(views.html.errors.serverError())
     }

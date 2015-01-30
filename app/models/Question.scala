@@ -18,14 +18,15 @@ object Question {
   val findAllQuery = SQL("SELECT * FROM questions");
   val findOneQuery = SQL("SELECT * FROM questions WHERE id = {id}")
   val createQuestionStatement =
-    SQL("INSERT INTO questions (title, body, created_at) " +
-      "VALUES ({title}, {body}, NOW()) RETURNING id")
+    SQL("INSERT INTO questions (title, body, user_id, created_at) " +
+      "VALUES ({title}, {body}, {user_id}, NOW()) RETURNING id")
 
-  def create(title: String, body: String): Option[Question] = {
+  def create(title: String, body: String, userId: Long): Option[Question] = {
     DB.withConnection { implicit connection =>
       createQuestionStatement.on(
         "title" -> title,
-        "body" -> body
+        "body" -> body,
+        "user_id" -> userId
       ).map { row => Question(row[Long]("id"), title, body) }.singleOpt()
     }
   }
