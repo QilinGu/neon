@@ -4,79 +4,73 @@ import models.User
 import play.api.Play.current
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import play.api.libs.ws.WS
+import play.api.libs.ws.{WS, WSResponse}
 import play.api.mvc._
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 object Sessions extends Controller {
   def start = Action {
-    Redirect(oauthRedirectUrl)
+    Redirect(OAuthRedirectUrl)
   }
 
-  def close = Action { implicit request =>
-    Redirect(routes.Questions.index)
-      .withSession(request.session - "user.id" - "user.login")
+  def close = Action { request =>
+    Redirect(routes.Questions.index).withSession(request.session - "user.id")
   }
 
-  def authenticate(code: String) = Action { implicit request =>
-    getUserProfile(code) match {
-      case Some(profile) => saveUserAndRedirect(request, profile)
-      case None => InternalServerError(views.html.errors.serverError())
-    }
+  def authenticate(code: String) = Action { request =>
+    getProfile(code)
+      .flatMap(profile => saveUserAndRedirect(request, profile))
+      .getOrElse(InternalServerError(views.html.errors.serverError()))
   }
 
-  val oauthClientId = readConfig("oauth.github.client_id")
-  val oauthClientSecret = readConfig("oauth.github.client_secret")
+  private def getProfile(code: String): Option[Profile] =
+    requestAccessToken(code).flatMap(token => requestProfile(token))
 
-  def readConfig(key: String): String =
-    current.configuration.getString(key) match {
-      case Some(value) => value
-      case None => ""
-    }
+  private def requestAccessToken(code: String): Option[String] =
+    request[AccessToken](accessTokenRequest(code), tokenParser).map(_.token)
 
-  val oauthRedirectUrl =
-    s"https://github.com/login/oauth/authorize?client_id=$oauthClientId"
-  val oauthAccessTokenUrl = "https://github.com/login/oauth/access_token"
-  val userDetailsUrl = "https://api.github.com/user"
+  private def requestProfile(authToken: String): Option[Profile] =
+    request[Profile](profileRequest(authToken), profileParser)
 
-  case class UserProfile(githubId: Long, username: String)
-
-  def getUserProfile(code: String): Option[UserProfile] = {
-    val tokenResponseFuture = WS.url(oauthAccessTokenUrl)
-      .withHeaders("Accept" -> "application/json")
-      .withQueryString(
-        "client_id" -> oauthClientId,
-        "client_secret" -> oauthClientSecret,
-        "code" -> code
-      ).post("")
-
-    val tokenResponse = Await.result(tokenResponseFuture, 60 seconds)
-    val tokenJson = Json.parse(tokenResponse.body)
-
-    (tokenJson \ "access_token") match {
-      case token: JsString => {
-        val userResponseFuture = WS.url(userDetailsUrl)
-          .withHeaders("Authorization" -> ("token " + token.as[String])).get
-
-        val userResponse = Await.result(userResponseFuture, 60 seconds)
-        Some(Json.parse(userResponse.body).as[UserProfile])
-      }
-      case _ => None
-    }
+  private def request[A](request: Future[WSResponse], formatter: Reads[A]): Option[A] = {
+    val response = Await.result(request, 10 seconds)
+    try Some(Json.parse(response.body).as[A](formatter))
+    catch { case e: Exception => None }
   }
 
-  def saveUserAndRedirect(request: Request[AnyContent], userProfile: UserProfile) = {
-    val user = User.findOrCreateByGithubProfile(userProfile.githubId, userProfile.username)
+  def saveUserAndRedirect[A](request: Request[A], profile: Profile): Option[Result] =
+    User.findOrCreateByGithubProfile(profile.githubId, profile.username)
+      .map(user => Redirect(routes.Questions.index)
+        .withSession(request.session + ("user.id" -> user.id.toString)))
 
-    user match {
-      case Some(user) => Redirect(routes.Questions.index).withSession(request.session + ("user.id" -> user.id.toString))
-      case None => InternalServerError(views.html.errors.serverError())
-    }
-  }
+  case class AccessToken(token: String)
+  case class Profile(githubId: Long, username: String)
 
-  implicit val userReads: Reads[UserProfile] = (
+  val tokenParser: Reads[AccessToken] =
+    (JsPath \ "access_token").read[String].map(AccessToken(_))
+
+  val profileParser: Reads[Profile] = (
     (JsPath \ "id").read[Long] and
     (JsPath \ "login").read[String]
-  )(UserProfile.apply _)
+  )(Profile.apply _)
+
+  private def profileRequest(authToken: String) =
+    WS.url(UserDetailsUrl).withHeaders("Authorization" -> s"token $authToken").get()
+
+  private def accessTokenRequest(code: String) =
+    WS.url(OAuthAccessTokenUrl).withHeaders("Accept" -> "application/json")
+      .post(Map("client_id" -> Seq(OAuthClientId),
+        "client_secret" -> Seq(OAuthClientSecret),
+        "code" -> Seq(code)))
+
+  val OAuthClientId = readConfig("oauth.github.client_id")
+  val OAuthClientSecret = readConfig("oauth.github.client_secret")
+  val OAuthRedirectUrl =
+    s"https://github.com/login/oauth/authorize?client_id=$OAuthClientId"
+  val OAuthAccessTokenUrl = "https://github.com/login/oauth/access_token"
+  val UserDetailsUrl = "https://api.github.com/user"
+
+  private def readConfig(key: String): String =
+    current.configuration.getString(key).getOrElse("")
 }
