@@ -1,7 +1,6 @@
 package controllers
 
-import controllers.actions.AuthenticatedAction
-import controllers.actions.AuthenticatedRequest
+import controllers.actions.{AuthenticatedAction, AuthenticatedRequest}
 import models.{Question, User}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -15,10 +14,9 @@ object Questions extends Controller {
   }
 
   def show(id: Long) = Action { implicit request =>
-    Question.find(id) match {
-      case Some(question) => Ok(views.html.questions.show(question))
-      case None => NotFound(views.html.errors.notFound())
-    }
+    Question.find(id)
+      .map(question => Ok(views.html.questions.show(question)))
+      .getOrElse(NotFound(views.html.errors.notFound()))
   }
 
   def newForm = AuthenticatedAction { implicit request =>
@@ -33,17 +31,12 @@ object Questions extends Controller {
 
   def saveAndRedirect(params: QuestionParams,
     request: AuthenticatedRequest[AnyContent]) =
-    Question.create(params.title, params.body, request.userId) match {
-      case Some(question) => Redirect(routes.Questions.show(question.id))
-      case None => InternalServerError(views.html.errors.serverError())
-    }
+    Question.create(params.title, params.body, request.userId)
+      .map(question => Redirect(routes.Questions.show(question.id)))
+      .getOrElse(InternalServerError(views.html.errors.serverError()))
 
-  implicit def user(implicit request: RequestHeader): Option[User] = {
-    request.session.get("user.id") match {
-      case Some(id) => User.find(id.toLong)
-      case None => None
-    }
-  }
+  implicit def user(implicit request: RequestHeader): Option[User] =
+    request.session.get("user.id").flatMap(id => User.find(id.toLong))
 
   val questionMapping = mapping(
     "title" -> nonEmptyText,
